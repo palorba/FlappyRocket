@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flappy Rocket</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #87CEEB;
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      display: block;
+      margin: auto;
+      background-color: #add8e6;
+    }
+    #score {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 24px;
+      color: black;
+    }
+    #game-over {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 32px;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <div id="score">Score: 0</div>
+  <div id="game-over">Game Over! Cliquez pour recommencer</div>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const rocket = { x: 50, y: canvas.height / 2, width: 30, height: 30, velocity: 0, gravity: 0.3, lift: -6 };
+    const obstacles = [];
+    const obstacleWidth = 50, obstacleGap = 140, obstacleSpeed = 2;
+    let score = 0, gameOver = false;
+
+    function createObstacle() {
+      let gapY = Math.random() * (canvas.height - obstacleGap - 100) + 50;
+      obstacles.push({ x: canvas.width, topHeight: gapY, bottomHeight: canvas.height - (gapY + obstacleGap), passed: false });
+    }
+
+    function update() {
+      if (gameOver) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      rocket.velocity += rocket.gravity;
+      rocket.y += rocket.velocity;
+      ctx.fillStyle = "red";
+      ctx.fillRect(rocket.x, rocket.y, rocket.width, rocket.height);
+
+      for (let i = 0; i < obstacles.length; i++) {
+        obstacles[i].x -= obstacleSpeed;
+        ctx.fillStyle = "green";
+        ctx.fillRect(obstacles[i].x, 0, obstacleWidth, obstacles[i].topHeight);
+        ctx.fillRect(obstacles[i].x, canvas.height - obstacles[i].bottomHeight, obstacleWidth, obstacles[i].bottomHeight);
+        
+        if (rocket.x < obstacles[i].x + obstacleWidth && rocket.x + rocket.width > obstacles[i].x && (rocket.y < obstacles[i].topHeight || rocket.y + rocket.height > canvas.height - obstacles[i].bottomHeight)) {
+          gameOver = true;
+        }
+
+        if (!obstacles[i].passed && obstacles[i].x + obstacleWidth < rocket.x) {
+          obstacles[i].passed = true;
+          score++;
+          document.getElementById("score").textContent = "Score: " + score;
+        }
+      }
+      if (rocket.y <= 0 || rocket.y + rocket.height >= canvas.height) gameOver = true;
+      if (!gameOver) {
+        requestAnimationFrame(update);
+      } else {
+        document.getElementById("game-over").style.display = "block";
+      }
+    }
+
+    function jump() {
+      if (gameOver) {
+        gameOver = false;
+        score = 0;
+        rocket.y = canvas.height / 2;
+        rocket.velocity = 0;
+        obstacles.length = 0;
+        document.getElementById("score").textContent = "Score: 0";
+        document.getElementById("game-over").style.display = "none";
+        update();
+      } else {
+        rocket.velocity = rocket.lift;
+      }
+    }
+
+    setInterval(createObstacle, 1800);
+    canvas.addEventListener("mousedown", jump);
+    canvas.addEventListener("touchstart", jump);
+    update();
+  </script>
+</body>
+</html>
